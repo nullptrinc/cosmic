@@ -19,6 +19,8 @@ cosmic remove org.example.myapp
 - The first install pins the app's signing keys; updates must be signed by
   one of them and have a higher `build`.
 - A signature by a key in `/etc/cosmic/keys/*.pub` makes a platform app.
+- Keys can live on an OpenPGP card (YubiKey): `tools/apf-sign-gpg --key ID
+  app.apf` signs through gpg-agent, `--export-pub FILE` writes the public key.
 - Apps unpack to `/data/cosmic/apps/<id>`, owned by root; each app gets its
   own uid (from 10000) and a private `/data/cosmic/data/<id>`. Updates swap
   the directory atomically and keep the data.

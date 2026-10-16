@@ -170,16 +170,23 @@ bool key_read_public_id(const char *path, char id[APF_KEY_ID_SIZE]) {
 	return true;
 }
 
-/* The signed message: the domain, then the content list. */
+/* The signed message: SHA-512 of the domain and the content list. Hardware
+ * keys (an OpenPGP card) sign a digest, so software keys sign the same. */
 static unsigned char *message(const char *files, size_t length, size_t *size) {
-	size_t domain = sizeof(APF_SIGN_DOMAIN) - 1;
-	unsigned char *data = malloc(domain + length);
-	if (data) {
-		memcpy(data, APF_SIGN_DOMAIN, domain);
-		memcpy(data + domain, files, length);
-		*size = domain + length;
+	unsigned char *digest = malloc(64);
+	EVP_MD_CTX *context = EVP_MD_CTX_new();
+	unsigned int digest_length = 0;
+	bool ok = digest && context && EVP_DigestInit_ex(context, EVP_sha512(), NULL) == 1 &&
+		EVP_DigestUpdate(context, APF_SIGN_DOMAIN, sizeof(APF_SIGN_DOMAIN) - 1) == 1 &&
+		EVP_DigestUpdate(context, files, length) == 1 &&
+		EVP_DigestFinal_ex(context, digest, &digest_length) == 1 && digest_length == 64;
+	EVP_MD_CTX_free(context);
+	if (!ok) {
+		free(digest);
+		return NULL;
 	}
-	return data;
+	*size = 64;
+	return digest;
 }
 
 char *signature_make(const struct apf_key *key, const char *files, size_t length) {

@@ -41,9 +41,11 @@ key ed25519 <base64 of the 32-byte public key>
 sig <base64 of the 64-byte signature>
 ```
 
-The signature is Ed25519 over the bytes `cosmic-apf-1\n` followed by the
-bytes of `META-INF/files`. `<keyid>` is the first 16 hex digits of the
-SHA-256 of the raw public key, in lower case. A package needs at least one
+The signature is Ed25519 over the 64-byte SHA-512 digest of the bytes
+`cosmic-apf-1\n` followed by the bytes of `META-INF/files`. Signing a
+digest lets OpenPGP cards such as a YubiKey hold the key (see
+`tools/apf-sign-gpg`). `<keyid>` is the first 16 hex digits of the SHA-256
+of the raw public key, in lower case. A package needs at least one
 valid signature; invalid ones make it invalid.
 
 Trust is decided at install time, not by the file:
