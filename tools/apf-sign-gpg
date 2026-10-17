@@ -47,8 +47,26 @@ def find_keygrip(key):
     fail("no secret key " + key)
 
 
+def session_options():
+    """Tells gpg-agent where to ask for the PIN: our commands arrive through a
+    pipe, so a terminal pinentry would not find a terminal on its own."""
+    options = []
+    for stream in (sys.stdin, sys.stderr, sys.stdout):
+        try:
+            options.append("OPTION ttyname=" + os.ttyname(stream.fileno()))
+            break
+        except OSError:
+            continue
+    if os.environ.get("TERM"):
+        options.append("OPTION ttytype=" + os.environ["TERM"])
+    if os.environ.get("DISPLAY"):
+        options.append("OPTION display=" + os.environ["DISPLAY"])
+    return options
+
+
 def agent(commands):
     """Runs Assuan commands through gpg-connect-agent; returns the decoded data."""
+    commands = session_options() + commands
     result = subprocess.run(["gpg-connect-agent"], input="\n".join(commands + ["/bye"]).encode(),
                             capture_output=True, check=True)
     data = bytearray()
