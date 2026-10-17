@@ -90,8 +90,21 @@ bool apf_pack(const char *directory, struct apf_key **keys, int key_count, const
 bool apf_sign(const char *path, struct apf_key **keys, int key_count);
 
 /* install.c */
+struct cosmic_state {
+	long uid;
+	long build;
+	bool platform;
+	char signers[APF_MAX_SIGNATURES][APF_KEY_ID_SIZE];
+	int signer_count;
+};
+/* The install root, /data/cosmic unless $COSMIC_ROOT says otherwise. */
+const char *cosmic_root(void);
+bool cosmic_read_state(const char *id, struct cosmic_state *state);
 bool cosmic_install(const char *path);
 bool cosmic_remove(const char *id);
 bool cosmic_list(void);
+
+/* serve.c: publishes installed apps to Constellation, /blinks/apps/<id>. */
+int cosmic_serve(void);
 
 #endif

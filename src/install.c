@@ -20,13 +20,6 @@
 #define FIRST_UID 10000
 #define LAST_UID 19999
 
-struct state {
-	long uid;
-	long build;
-	bool platform;
-	char signers[APF_MAX_SIGNATURES][APF_KEY_ID_SIZE];
-	int signer_count;
-};
 
 static char root[PATH_MAX];
 
@@ -45,10 +38,15 @@ static bool make_directory(const char *path, mode_t mode) {
 	return mkdir(path, mode) == 0 || errno == EEXIST;
 }
 
-/* Creates the layout and takes the cosmic lock; returns its descriptor. */
-static int open_root(void) {
+const char *cosmic_root(void) {
 	const char *base = getenv("COSMIC_ROOT");
 	snprintf(root, sizeof(root), "%s", base && base[0] ? base : "/data/cosmic");
+	return root;
+}
+
+/* Creates the layout and takes the cosmic lock; returns its descriptor. */
+static int open_root(void) {
+	cosmic_root();
 	char path[PATH_MAX];
 	if (!make_directory(root, 0755) || !make_directory(path_in(path, "apps"), 0755) ||
 			!make_directory(path_in(path, "apps/.staging"), 0700) ||
@@ -81,7 +79,7 @@ static bool remove_tree(const char *path) {
 	return nftw(path, remove_entry, 16, FTW_DEPTH | FTW_PHYS | FTW_MOUNT) == 0;
 }
 
-static bool read_state(const char *id, struct state *state) {
+bool cosmic_read_state(const char *id, struct cosmic_state *state) {
 	char path[PATH_MAX];
 	memset(state, 0, sizeof(*state));
 	struct json_object *json = json_object_from_file(path_in(path, "state/apps/%s.json", id));
@@ -110,7 +108,7 @@ static bool read_state(const char *id, struct state *state) {
 	return state->uid >= FIRST_UID;
 }
 
-static bool write_state(const struct apf_package *package, const struct state *state) {
+static bool write_state(const struct apf_package *package, const struct cosmic_state *state) {
 	struct json_object *json = json_object_new_object();
 	json_object_object_add(json, "uid", json_object_new_int64(state->uid));
 	json_object_object_add(json, "version", json_object_new_string(package->manifest.version));
@@ -182,7 +180,7 @@ static bool platform_signed(const struct apf_package *package) {
 	return found;
 }
 
-static bool shares_signer(const struct apf_package *package, const struct state *state) {
+static bool shares_signer(const struct apf_package *package, const struct cosmic_state *state) {
 	for (int i = 0; i < package->signer_count; i++) {
 		for (int j = 0; j < state->signer_count; j++) {
 			if (strcmp(package->signers[i], state->signers[j]) == 0) {
@@ -214,8 +212,8 @@ static bool install_locked(const char *file) {
 	}
 
 	const struct apf_manifest *manifest = &package.manifest;
-	struct state old, state = { 0 };
-	bool update = read_state(manifest->id, &old);
+	struct cosmic_state old, state = { 0 };
+	bool update = cosmic_read_state(manifest->id, &old);
 	const char *problem = NULL;
 	if (manifest->api > COSMIC_API) {
 		problem = "needs a newer Starry (api)";
@@ -303,9 +301,9 @@ bool cosmic_remove(const char *id) {
 	if (lock < 0) {
 		return false;
 	}
-	struct state state;
+	struct cosmic_state state;
 	char path[PATH_MAX];
-	bool ok = read_state(id, &state);
+	bool ok = cosmic_read_state(id, &state);
 	if (!ok) {
 		cosmic_say("%s is not installed\n", id);
 	} else {
@@ -337,7 +335,7 @@ bool cosmic_list(void) {
 		}
 		char id[APF_ID_MAX + 1];
 		snprintf(id, sizeof(id), "%.*s", (int)(length - 5), entry->d_name);
-		struct state state;
+		struct cosmic_state state;
 		char manifest_path[PATH_MAX];
 		FILE *file = fopen(path_in(manifest_path, "apps/%s/manifest.json", id), "r");
 		char text[65536];
@@ -347,7 +345,7 @@ bool cosmic_list(void) {
 		}
 		struct apf_manifest manifest;
 		char error[256];
-		if (!read_state(id, &state) || !manifest_parse(text, size, &manifest, error, sizeof(error))) {
+		if (!cosmic_read_state(id, &state) || !manifest_parse(text, size, &manifest, error, sizeof(error))) {
 			printf("%-32s (damaged)\n", id);
 			continue;
 		}

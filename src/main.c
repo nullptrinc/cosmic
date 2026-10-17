@@ -13,7 +13,8 @@ static void usage(void) {
 		"       cosmic verify APP.apf              check a package and show it\n"
 		"       cosmic install APP.apf\n"
 		"       cosmic remove ID\n"
-		"       cosmic list\n");
+		"       cosmic list\n"
+		"       cosmic serve                       keep /blinks/apps/ in Constellation (root)\n");
 	exit(2);
 }
 
@@ -95,6 +96,9 @@ int main(int argc, char **argv) {
 	}
 	if (strcmp(command, "remove") == 0 && argc == 3) {
 		return cosmic_remove(argv[2]) ? 0 : 1;
+	}
+	if (strcmp(command, "serve") == 0 && argc == 2) {
+		return cosmic_serve();
 	}
 	if (strcmp(command, "list") == 0 && argc == 2) {
 		return cosmic_list() ? 0 : 1;
