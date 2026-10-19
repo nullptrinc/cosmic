@@ -18,6 +18,10 @@
 #define APF_SIGN_DOMAIN "cosmic-apf-1\n"
 #define APF_KEY_ID_SIZE 17 /* 16 hex digits and the terminator */
 
+/* Icon appearances, as iOS 26 exports them; only "default" is required. */
+#define APF_ICON_STYLES 4
+extern const char *const apf_icon_styles[APF_ICON_STYLES]; /* default, dark, tinted, clear */
+
 #define cosmic_say(...) fprintf(stderr, "cosmic: " __VA_ARGS__)
 
 struct json_object;
@@ -30,7 +34,7 @@ struct apf_manifest {
 	long api;
 	char entry_type[8]; /* "qml" or "native" */
 	char entry_path[APF_PATH_MAX];
-	char icon[APF_PATH_MAX];
+	char icons[APF_ICON_STYLES][APF_PATH_MAX]; /* by apf_icon_styles; empty if absent */
 	char color[8];
 };
 

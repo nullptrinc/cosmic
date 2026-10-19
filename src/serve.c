@@ -4,6 +4,7 @@
  * app is published as /blinks/apps/<id>:
  *
  *     name::Phone   name.ru::Телефон   color::#27AE60   icon::/data/cosmic/apps/<id>/...
+ *     icon.dark::...  icon.tinted::...  icon.clear::...   (the appearances the app has)
  *     entry::qml    path::/data/cosmic/apps/<id>/qml/main.qml
  *     version::1.0  build:n:3          uid:n:10000      platform:b:false
  *
@@ -169,9 +170,17 @@ static void publish(const char *id) {
 	if (manifest.color[0]) {
 		add_attr(text, sizeof(text), &length, keys, sizeof(keys), "color", "", manifest.color);
 	}
-	if (manifest.icon[0]) {
-		snprintf(path, sizeof(path), "%s/apps/%s/%s", cosmic_root(), id, manifest.icon);
-		add_attr(text, sizeof(text), &length, keys, sizeof(keys), "icon", "", path);
+	for (int i = 0; i < APF_ICON_STYLES; i++) {
+		if (manifest.icons[i][0]) {
+			char key[32];
+			if (i == 0) {
+				snprintf(key, sizeof(key), "icon");
+			} else {
+				snprintf(key, sizeof(key), "icon.%s", apf_icon_styles[i]);
+			}
+			snprintf(path, sizeof(path), "%s/apps/%s/%s", cosmic_root(), id, manifest.icons[i]);
+			add_attr(text, sizeof(text), &length, keys, sizeof(keys), key, "", path);
+		}
 	}
 	snprintf(path, sizeof(path), "%s/apps/%s/%s", cosmic_root(), id, manifest.entry_path);
 	if (strlen(path) > VALUE_MAX) {

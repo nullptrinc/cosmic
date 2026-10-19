@@ -5,6 +5,8 @@
 #include <string.h>
 #include "apf.h"
 
+const char *const apf_icon_styles[APF_ICON_STYLES] = { "default", "dark", "tinted", "clear" };
+
 static const char *get_string(struct json_object *object, const char *key) {
 	struct json_object *value;
 	return json_object_object_get_ex(object, key, &value) &&
@@ -80,9 +82,33 @@ bool manifest_parse(const char *text, size_t length, struct apf_manifest *manife
 			!apf_valid_path(manifest->entry_path)) {
 		FAIL("manifest entry.path must be a path in the package");
 	}
-	const char *icon = get_string(json, "icon");
-	if (icon && (!copy(manifest->icon, sizeof(manifest->icon), icon) || !apf_valid_path(icon))) {
-		FAIL("manifest icon must be a path in the package");
+	/* "icon": a path, or one path per appearance: {"default": ..., "dark": ...}. */
+	struct json_object *icon;
+	if (json_object_object_get_ex(json, "icon", &icon)) {
+		if (json_object_is_type(icon, json_type_string)) {
+			const char *path = json_object_get_string(icon);
+			if (!copy(manifest->icons[0], sizeof(manifest->icons[0]), path) || !apf_valid_path(path)) {
+				FAIL("manifest icon must be a path in the package");
+			}
+		} else if (json_object_is_type(icon, json_type_object)) {
+			for (int i = 0; i < APF_ICON_STYLES; i++) {
+				struct json_object *path;
+				if (!json_object_object_get_ex(icon, apf_icon_styles[i], &path)) {
+					continue;
+				}
+				const char *text = json_object_is_type(path, json_type_string) ?
+					json_object_get_string(path) : NULL;
+				if (!text || !copy(manifest->icons[i], sizeof(manifest->icons[i]), text) ||
+						!apf_valid_path(text)) {
+					FAIL("manifest icon.%s must be a path in the package", apf_icon_styles[i]);
+				}
+			}
+			if (!manifest->icons[0][0]) {
+				FAIL("manifest icon needs a \"default\"");
+			}
+		} else {
+			FAIL("manifest icon must be a path or an object of paths");
+		}
 	}
 	const char *color = get_string(json, "color");
 	if (color) {

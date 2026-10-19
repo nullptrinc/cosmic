@@ -316,9 +316,12 @@ static bool read_entries(struct reader *r, struct apf_package *package) {
 		snprintf(r->error, r->error_size, "entry %s is not executable", program->path);
 		goto done;
 	}
-	if (package->manifest.icon[0] && !find_file(package, package->manifest.icon)) {
-		snprintf(r->error, r->error_size, "icon %s is not in the package", package->manifest.icon);
-		goto done;
+	for (int i = 0; i < APF_ICON_STYLES; i++) {
+		const char *icon = package->manifest.icons[i];
+		if (icon[0] && !find_file(package, icon)) {
+			snprintf(r->error, r->error_size, "icon %s is not in the package", icon);
+			goto done;
+		}
 	}
 	ok = true;
 done:

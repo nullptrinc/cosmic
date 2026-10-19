@@ -67,7 +67,7 @@ Trust is decided at install time, not by the file:
   "build": 3,
   "api": 1,
   "name": { "en": "Phone", "ru": "Телефон" },
-  "icon": "icons/dialer.svg",
+  "icon": { "default": "icons/default.png", "dark": "icons/dark.png" },
   "color": "#27AE60",
   "entry": { "type": "qml", "path": "qml/main.qml" },
   "permissions": ["telephony"]
@@ -82,7 +82,7 @@ Trust is decided at install time, not by the file:
 | `build` | integer ≥ 1; an update must have a higher one |
 | `api` | the lowest Starry platform API level the app needs |
 | `name` | display name per locale (`en`, `ru`, `pt_BR`...); `en` is required |
-| `icon` | optional; a file in the package |
+| `icon` | optional; a PNG in the package, or one per appearance: `{"default": ..., "dark": ..., "tinted": ..., "clear": ...}` with `default` required. `tinted` is recoloured with the system accent, so only its brightness counts. 256×256, 8-bit RGBA |
 | `color` | optional; `#RRGGBB`, the icon tile until icons are drawn |
 | `entry.type` | `qml` (run by Stardust) or `native` |
 | `entry.path` | a file in the package; executable for `native` |
