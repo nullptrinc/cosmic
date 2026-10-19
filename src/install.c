@@ -282,6 +282,63 @@ static bool install_locked(const char *file) {
 	return ok;
 }
 
+bool cosmic_prepare(void) {
+	int lock = open_root();
+	if (lock >= 0) {
+		close(lock);
+	}
+	return lock >= 0;
+}
+
+static int compare_names(const void *a, const void *b) {
+	return strcmp(*(char *const *)a, *(char *const *)b);
+}
+
+/* Installs the packages a system image ships, in name order. One that is
+ * already installed at the same or a newer build is left alone, so this
+ * can run at every boot. */
+bool cosmic_preinstall(const char *directory) {
+	DIR *dir = opendir(directory);
+	if (!dir) {
+		return errno == ENOENT; /* an image without preinstalled apps */
+	}
+	char *names[256];
+	int count = 0;
+	for (struct dirent *entry; count < 256 && (entry = readdir(dir));) {
+		size_t length = strlen(entry->d_name);
+		if (length > 4 && strcmp(entry->d_name + length - 4, ".apf") == 0) {
+			names[count++] = strdup(entry->d_name);
+		}
+	}
+	closedir(dir);
+	qsort(names, (size_t)count, sizeof(names[0]), compare_names);
+	int lock = open_root();
+	bool ok = lock >= 0;
+	for (int i = 0; ok && i < count; i++) {
+		char path[PATH_MAX], error[512];
+		snprintf(path, sizeof(path), "%s/%s", directory, names[i]);
+		struct apf_package package;
+		struct cosmic_state state;
+		if (!apf_read(path, -1, &package, error, sizeof(error))) {
+			cosmic_say("%s: %s\n", path, error);
+			ok = false;
+		} else if (cosmic_read_state(package.manifest.id, &state) &&
+				state.build >= package.manifest.build) {
+			apf_package_free(&package);
+		} else {
+			apf_package_free(&package);
+			ok = install_locked(path);
+		}
+	}
+	for (int i = 0; i < count; i++) {
+		free(names[i]);
+	}
+	if (lock >= 0) {
+		close(lock);
+	}
+	return ok;
+}
+
 bool cosmic_install(const char *file) {
 	int lock = open_root();
 	if (lock < 0) {

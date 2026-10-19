@@ -285,6 +285,9 @@ int cosmic_serve(void) {
 	sigaction(SIGINT, &action, NULL);
 	char state_dir[PATH_MAX];
 	snprintf(state_dir, sizeof(state_dir), "%s/state/apps", cosmic_root());
+	if (!cosmic_prepare()) { /* a fresh /data has no layout yet */
+		return 1;
+	}
 	int notify = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	if (notify < 0 || inotify_add_watch(notify, state_dir,
 			IN_CLOSE_WRITE | IN_MOVED_TO | IN_MOVED_FROM | IN_DELETE) < 0) {

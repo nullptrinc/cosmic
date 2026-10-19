@@ -100,7 +100,11 @@ struct cosmic_state {
 /* The install root, /data/cosmic unless $COSMIC_ROOT says otherwise. */
 const char *cosmic_root(void);
 bool cosmic_read_state(const char *id, struct cosmic_state *state);
+/* Creates the install layout under the root if it is missing. */
+bool cosmic_prepare(void);
 bool cosmic_install(const char *path);
+/* Installs every .apf of a directory that is new or newer than installed. */
+bool cosmic_preinstall(const char *directory);
 bool cosmic_remove(const char *id);
 bool cosmic_list(void);
 

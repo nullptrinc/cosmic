@@ -17,6 +17,8 @@ log=/run/cosmic.log
 case "${1:-start}" in
 	start)
 		pidof cosmic >/dev/null && exit 0
+		# Apps that come with the system image, first boot or newer image.
+		"$cosmic" preinstall @datadir@/cosmic/preinstall >>"$log" 2>&1 </dev/null
 		"$cosmic" serve >>"$log" 2>&1 </dev/null &
 		;;
 	stop)

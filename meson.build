@@ -20,5 +20,6 @@ configure_file(input: 'data/cosmic.init.in', output: 'cosmic.init',
   configuration: {
     'bindir': get_option('prefix') / get_option('bindir'),
     'libdir': get_option('prefix') / get_option('libdir'),
+    'datadir': get_option('prefix') / get_option('datadir'),
   },
   install_dir: get_option('datadir') / 'cosmic' / 'sysvinit', install_mode: 'rwxr-xr-x')
